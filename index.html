@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bloom">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Bloom</title>
+<style>
+:root{
+  --bg:#f6f3f7; --surface:#ffffff; --surface2:#efeaf1; --line:rgba(0,0,0,.08);
+  --text:#1b1720; --muted:#6f6876; --faint:#a39cab;
+  --pink:#e8577c; --pink-soft:#f6c3d1; --lav:#a98be8; --lav-soft:#ddd0fb; --blue:#8aa7f0; --grey:#c9c4cf;
+  --tab:rgba(250,248,251,.85); --btn:#d9d5de; --btn-text:#1b1720; --sel:#1b1720;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#000; --surface:#121014; --surface2:#1c1a1f; --line:rgba(255,255,255,.09);
+    --text:#f4f1f6; --muted:#a19aa8; --faint:#5f5966;
+    --pink:#ee5d84; --pink-soft:#5a2232; --lav:#b39af2; --lav-soft:#2f2648; --blue:#9fb4f5; --grey:#d8d4dc;
+    --tab:rgba(14,13,16,.82); --btn:#c9c6cf; --btn-text:#141216; --sel:#f4f1f6;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000; --surface:#121014; --surface2:#1c1a1f; --line:rgba(255,255,255,.09);
+  --text:#f4f1f6; --muted:#a19aa8; --faint:#5f5966;
+  --pink:#ee5d84; --pink-soft:#5a2232; --lav:#b39af2; --lav-soft:#2f2648; --blue:#9fb4f5; --grey:#d8d4dc;
+  --tab:rgba(14,13,16,.82); --btn:#c9c6cf; --btn-text:#141216; --sel:#f4f1f6;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,textarea,select{font:inherit;color:var(--text)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--lav);outline-offset:2px}
+.app{position:relative;height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column}
+.screens{flex:1;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 16px 104px;display:none}
+.screen.on{display:block;animation:in .22s ease}
+.screen.push.on{animation:push .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes in{from{opacity:.4}to{opacity:1}}
+@keyframes push{from{transform:translateX(30%);opacity:.3}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.screen.on,.screen.push.on,.sheet,.toast{animation:none!important;transition:none!important}}
+.nav{display:flex;align-items:center;gap:6px;height:52px;margin:0 -8px}
+.nav h1{font-size:22px;font-weight:600;margin:0;flex:1;letter-spacing:-.2px}
+.large{font-size:26px;font-weight:700;letter-spacing:-.4px;margin:6px 0 14px}
+.iconbtn{width:40px;height:40px;display:grid;place-items:center;border-radius:20px;color:var(--text)}
+.iconbtn:active{background:var(--surface2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px}
+.row{display:flex;align-items:center;gap:12px;padding:13px 14px;width:100%;text-align:left}
+.row+.row{border-top:1px solid var(--line)}
+.row .t{flex:1;min-width:0}
+.row .s{font-size:13px;color:var(--muted);margin-top:2px}
+.chev{color:var(--faint);flex:none}
+.press{transition:transform .12s}
+.press:active{transform:scale(.97);opacity:.85}
+.stack>*+*{margin-top:12px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+/* Home */
+.hero{position:relative;margin:0 -16px;padding:18px 16px 12px;text-align:center;overflow:hidden;min-height:310px}
+.hero .sky{position:absolute;inset:0;z-index:0}
+.hero>*:not(.sky){position:relative;z-index:1}
+.hero .gear{position:absolute;right:12px;top:6px}
+.name{font-family:"Didot","Bodoni 72","Playfair Display",Georgia,serif;font-weight:400;font-size:54px;letter-spacing:.5px;margin:4px 0 0;line-height:1.1}
+.tag{font-family:"Didot",Georgia,serif;font-size:17px;color:var(--muted);margin:6px 0}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:14px 16px;margin-bottom:12px;border-radius:16px;background:var(--lav-soft);font-size:14px}
+.daycard .ic{width:46px;height:46px;border-radius:23px;background:var(--surface2);display:grid;place-items:center;flex:none}
+.big{font-size:22px;font-weight:500;letter-spacing:-.3px}
+
+/* Calendar */
+.monthbar{display:flex;align-items:center;justify-content:space-between;margin:4px -8px 10px}
+.monthbar h2{font-size:19px;font-weight:500;margin:0}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.dow div{font-size:12px;color:var(--muted);padding:6px 0}
+.grid button{position:relative;height:42px;display:grid;place-items:center;font-size:15px}
+.grid button span{width:34px;height:34px;border-radius:17px;display:grid;place-items:center}
+.grid .out{color:var(--faint)}
+.grid .today span{background:var(--lav-soft);font-weight:700;box-shadow:0 0 0 1.5px var(--lav)}
+.grid .sel span{background:var(--sel);color:var(--bg)}
+.grid .per::after,.grid .pp::after{content:"";position:absolute;bottom:3px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:3px;background:var(--pink)}
+.grid .pp::after{background:transparent;box-shadow:inset 0 0 0 1.3px var(--pink)}
+.grid .per span{color:var(--pink);font-weight:600}
+.grid .fert::before{content:"";position:absolute;bottom:1px;left:20%;right:20%;height:2px;border-radius:2px;background:var(--lav)}
+.grid .ov span{box-shadow:inset 0 0 0 1.5px var(--text)}
+.legend{display:flex;gap:18px;justify-content:center;font-size:12px;color:var(--muted);margin:14px 0 18px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:5px;margin-right:6px;vertical-align:-1px}
+
+/* Overview */
+.ring{display:block;margin:0 auto;width:190px;height:190px}
+.phase{display:flex;align-items:center;gap:14px;padding:14px 4px}
+.phase+.phase{border-top:1px solid var(--line)}
+.dot{width:24px;height:24px;border-radius:12px;flex:none}
+.phase.now .t b::after{content:"Now";font-size:11px;font-weight:600;margin-left:8px;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--muted);vertical-align:1px}
+
+/* Mood */
+.moods{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mood{padding:10px 4px 9px;border-radius:16px;background:var(--surface);border:1.5px solid var(--line);text-align:center;font-size:14px}
+.mood .e{font-size:28px;display:block;line-height:1.2;margin-bottom:4px}
+.mood.on{border-color:var(--text);background:var(--surface2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 14px;border-radius:20px;border:1.5px solid var(--line);background:var(--surface);font-size:14px}
+.chip.on{border-color:var(--text);background:var(--surface2)}
+.h3{font-size:17px;font-weight:600;margin:18px 0 8px}
+.h3 em{font-style:normal;font-weight:400;color:var(--muted);font-size:15px}
+textarea,.field{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);resize:none}
+.btn{display:block;width:100%;height:46px;border-radius:23px;background:var(--btn);color:var(--btn-text);font-weight:600;font-size:16px}
+.btn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--line);font-weight:500}
+.btn.danger{background:transparent;color:var(--pink);font-weight:500}
+.btn:disabled{opacity:.4}
+
+/* Log */
+.drop{width:116px;height:116px;border-radius:58px;border:1.5px solid var(--line);display:grid;place-items:center;margin:26px auto 22px;background:var(--surface)}
+.drop.live{border-color:var(--pink);box-shadow:0 0 0 8px var(--pink-soft)}
+
+/* History */
+.hist .ic{width:40px;height:40px;border-radius:20px;background:var(--pink-soft);display:grid;place-items:center;flex:none}
+.empty{text-align:center;padding:40px 10px;color:var(--muted)}
+
+/* Toggle */
+.tog{position:relative;width:51px;height:31px;border-radius:16px;background:var(--surface2);flex:none;transition:background .2s;border:1px solid var(--line)}
+.tog::after{content:"";position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:13px;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.3);transition:transform .2s}
+.tog[aria-checked="true"]{background:#34c759}
+.tog[aria-checked="true"]::after{transform:translateX(20px)}
+.rem .ic{width:42px;height:42px;border-radius:21px;display:grid;place-items:center;flex:none;background:var(--surface2);font-size:20px}
+
+/* Tab bar */
+.tabbar{position:absolute;left:0;right:0;bottom:0;display:flex;background:var(--tab);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:20}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--faint);padding:4px 0}
+.tabbar button[aria-current="page"]{color:var(--text);font-weight:600}
+
+/* Sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--surface);border-radius:22px 22px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom,0px));z-index:50;transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);max-height:88%;overflow-y:auto}
+.sheet.on{transform:none}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--faint);margin:0 auto 14px;opacity:.6}
+.sheet h3{margin:0 0 4px;font-size:20px}
+.lbl{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translate(-50%,-140%);background:var(--surface2);color:var(--text);padding:12px 18px;border-radius:22px;font-size:14px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.35);z-index:60;transition:transform .3s cubic-bezier(.2,.8,.2,1);white-space:nowrap}
+.toast.on{transform:translate(-50%,0)}
+.seg{display:flex;background:var(--surface2);border-radius:10px;padding:2px}
+.seg button{flex:1;padding:7px 0;border-radius:8px;font-size:14px}
+.seg button.on{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.2);font-weight:600}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:34px;height:34px;border-radius:17px;background:var(--surface2);font-size:20px}
+.stepper b{min-width:28px;text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="screens" id="screens">
+
+    <!-- HOME -->
+    <section class="screen" id="s-home" aria-label="Home">
+      <div class="hero">
+        <svg class="sky" viewBox="0 0 400 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--bg)"/><stop offset=".55" stop-color="var(--lav-soft)" stop-opacity=".5"/><stop offset="1" stop-color="var(--pink-soft)" stop-opacity=".55"/></linearGradient>
+          </defs>
+          <rect width="400" height="420" fill="url(#g1)"/>
+          <g fill="var(--text)" opacity=".55">
+            <circle cx="40" cy="60" r=".9"/><circle cx="330" cy="40" r="1"/><circle cx="260" cy="110" r=".7"/><circle cx="90" cy="150" r=".8"/><circle cx="360" cy="180" r=".9"/><circle cx="20" cy="250" r=".7"/><circle cx="300" cy="260" r=".6"/><circle cx="150" cy="40" r=".6"/>
+          </g>
+          <path d="M200 30 L202 46 L218 48 L202 50 L200 66 L198 50 L182 48 L198 46Z" fill="var(--text)" opacity=".8"/>
+          <path d="M300 250 a26 26 0 1 0 22 36 a20 20 0 1 1 -22 -36z" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="1.2" opacity=".9"/>
+          <path d="M0 420 L0 370 Q30 340 50 360 Q70 330 95 355 Q120 335 140 362 Q170 345 200 370 Q230 350 260 368 Q290 340 320 360 Q350 345 400 365 L400 420Z" fill="var(--bg)" opacity=".85"/>
+        </svg>
+        <button class="iconbtn gear" data-go="settings" aria-label="Cycle settings">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+        <svg width="48" height="44" viewBox="0 0 24 22" fill="none" stroke="var(--text)" stroke-width="1" style="margin-top:26px" aria-hidden="true"><path d="M12 20.5S2 14.4 2 7.6A4.9 4.9 0 0 1 12 5a4.9 4.9 0 0 1 10 2.6c0 6.8-10 12.9-10 12.9z"/></svg>
+        <div class="name" id="homeName">Bloom</div>
+        <div class="tag">Your cycle. Your peace.</div>
+        <div style="color:var(--pink);font-size:16px" aria-hidden="true">♥</div>
+      </div>
+      <div id="homeBanner"></div>
+      <button class="card row daycard press" data-go="overview" style="margin-top:4px">
+        <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="1.4"><path d="M12 12c0-3 1-6 3.5-6S19 9 12 12zm0 0c3 0 6 1 6 3.5S15 19 12 12zm0 0c0 3-1 6-3.5 6S5 15 12 12zm0 0c-3 0-6-1-6-3.5S9 5 12 12z"/><circle cx="12" cy="12" r="1.3" fill="var(--pink)"/></svg></div>
+        <div class="t">
+          <div class="small muted" id="homeDate"></div>
+          <div class="big" id="homeDay"></div>
+          <div class="muted small" id="homePhase" style="font-size:15px;color:var(--text)"></div>
+        </div>
+        <svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="stack" style="margin-top:12px">
+        <button class="card row press" data-go="log">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--pink)"><path d="M12 2.7C9 7 6 10.4 6 14a6 6 0 0 0 12 0c0-3.6-3-7-6-11.3z"/></svg>
+          <div class="t" id="homeLogLabel">Log period</div>
+          <svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="card row press" data-tab="calendar">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <div class="t">View calendar</div>
+          <svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- CALENDAR -->
+    <section class="screen" id="s-calendar" aria-label="Calendar">
+      <div class="large">Calendar</div>
+      <div class="monthbar">
+        <button class="iconbtn" id="calPrev" aria-label="Previous month"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M8 2L2 8l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <h2 id="calTitle"></h2>
+        <button class="iconbtn" id="calNext" aria-label="Next month"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+      <div class="grid" id="calGrid"></div>
+      <div class="legend">
+        <span><i style="background:var(--pink)"></i>Period</span>
+        <span><i style="background:var(--lav)"></i>Fertile window</span>
+        <span><i style="box-shadow:inset 0 0 0 1.5px var(--text)"></i>Ovulation</span>
+      </div>
+      <div class="stack" id="calCards"></div>
+      <p class="small muted" style="text-align:center;margin-top:16px">Tap any day to log or change it.</p>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section class="screen push" id="s-overview" aria-label="Cycle overview">
+      <div class="nav"><button class="iconbtn" data-back aria-label="Back"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M8 2L2 8l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><h1>Cycle Overview</h1></div>
+      <svg class="ring" id="ring" viewBox="0 0 220 220" role="img"></svg>
+      <p class="small muted" style="text-align:center;margin:6px 0 14px" id="ovLen"></p>
+      <div id="phases" style="border-top:1px solid var(--line)"></div>
+      <div class="card row" style="margin-top:14px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>
+        <div class="t small">These dates are estimates, not guarantees. Your cycle can vary.</div>
+      </div>
+    </section>
+
+    <!-- MOOD -->
+    <section class="screen" id="s-mood" aria-label="Mood">
+      <div class="nav" style="margin-top:4px"><h1 style="font-size:28px;font-weight:700">Mood</h1>
+        <button class="iconbtn" id="moodHistBtn" aria-label="Mood history"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="12" width="3" height="8" rx="1"/><rect x="10.5" y="7" width="3" height="13" rx="1"/><rect x="17" y="3" width="3" height="17" rx="1"/></svg></button></div>
+      <div style="font-size:18px;margin:6px 0 12px" id="moodQ">How are you feeling today?</div>
+      <div class="moods" id="moods"></div>
+      <div class="h3">Symptoms <em>(optional)</em></div>
+      <div class="chips" id="symptoms"></div>
+      <div class="h3" style="font-size:16px;font-weight:500">Add a note <em>(optional)</em></div>
+      <textarea id="moodNote" rows="2" placeholder="How are you feeling?" maxlength="400"></textarea>
+      <button class="btn press" id="moodSave" style="margin-top:14px">Save</button>
+    </section>
+
+    <!-- LOG -->
+    <section class="screen push" id="s-log" aria-label="Log period">
+      <div class="nav"><button class="iconbtn" data-back aria-label="Back"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M8 2L2 8l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><h1>Log Period</h1></div>
+      <div class="drop" id="drop"><svg width="44" height="52" viewBox="0 0 24 28" fill="var(--grey)" id="dropIcon"><path d="M12 2C8.5 7.5 4 11.5 4 17a8 8 0 0 0 16 0c0-5.5-4.5-9.5-8-15z"/></svg></div>
+      <div style="text-align:center">
+        <div style="font-size:24px;margin-bottom:8px" id="logTitle">Log your period</div>
+        <div class="muted small" style="font-size:14px;max-width:290px;margin:0 auto" id="logSub">This helps me track your cycle and predict your next dates.</div>
+      </div>
+      <label class="lbl" for="logDate" id="logDateLbl" style="margin-top:22px">Day it started</label>
+      <input type="date" id="logDate" class="field">
+      <button class="btn press" id="logBtn" style="margin-top:16px">Log period</button>
+      <button class="btn ghost press" id="spotBtn" style="margin-top:10px">Log spotting on this day</button>
+      <div class="card" style="padding:16px;margin-top:18px">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><svg width="20" height="18" viewBox="0 0 24 22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20.5S2 14.4 2 7.6A4.9 4.9 0 0 1 12 5a4.9 4.9 0 0 1 10 2.6c0 6.8-10 12.9-10 12.9z"/></svg><b style="font-weight:500">Quick tip</b></div>
+        <div class="muted small">You can also log light spotting or irregular bleeding. It won’t change your predictions.</div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="screen" id="s-history" aria-label="Cycle history">
+      <div class="large">Cycle History</div>
+      <div class="card row" id="histStats" style="margin-bottom:12px"></div>
+      <div class="stack hist" id="histList"></div>
+      <button class="btn ghost press" id="histMore" style="margin-top:14px">View full history</button>
+    </section>
+
+    <!-- REMINDERS -->
+    <section class="screen push" id="s-reminders" aria-label="Reminders">
+      <div class="nav"><button class="iconbtn" data-back aria-label="Back"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M8 2L2 8l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><h1>Reminders</h1></div>
+      <div class="stack rem" id="remList"></div>
+      <button class="btn ghost press" id="remAdd" style="margin-top:14px">＋ Add reminder</button>
+      <div class="card" style="padding:16px;margin-top:18px" id="notifCard"></div>
+      <div class="card" style="padding:16px;margin-top:12px">
+        <b style="font-weight:600">Always-on alerts</b>
+        <div class="small muted" style="margin:4px 0 12px;line-height:1.5">Add your reminders to the iPhone Calendar so they buzz even when Bloom is closed. Do this again after logging a new period to refresh the dates.</div>
+        <div class="stack"><button class="btn press" id="icsCycle">Add period &amp; ovulation alerts</button><button class="btn ghost press" id="icsDaily">Add daily reminders</button></div>
+      </div>
+    </section>
+
+    <!-- MORE -->
+    <section class="screen" id="s-more" aria-label="More">
+      <div class="nav" style="margin-top:4px"><h1 style="font-size:28px;font-weight:700">More</h1></div>
+      <div style="text-align:center;margin:6px 0 18px">
+        <div style="width:84px;height:84px;border-radius:42px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;margin:0 auto 10px">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.2"><path d="M12 19c-4 0-8-2-9-6 3-1 6 0 9 3 3-3 6-4 9-3-1 4-5 6-9 6zM12 16c-2-2-3-5-2-9 1 0 2 1 2 1s1-1 2-1c1 4 0 7-2 9z"/></svg>
+        </div>
+        <div style="font-size:22px;font-weight:500" id="moreName">Isra</div>
+        <div class="muted small" style="font-size:14px">You got this <span style="color:var(--pink)">♥</span></div>
+      </div>
+      <div class="card">
+        <button class="row press" data-go="settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 2.4"/></svg><div class="t">Cycle settings</div><svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="row press" data-go="reminders"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2zM10 21h4"/></svg><div class="t">Reminders</div><svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="row press" data-go="privacy"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div class="t">Privacy<div class="s">Your data and backups</div></div><svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="row press" data-go="help"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.5"/></svg><div class="t">Help &amp; support</div><svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="row press" data-go="about"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><div class="t">About</div><svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;margin-top:14px">
+        <svg width="22" height="20" viewBox="0 0 24 22" fill="none" stroke="var(--pink)" stroke-width="1.6"><path d="M12 20.5S2 14.4 2 7.6A4.9 4.9 0 0 1 12 5a4.9 4.9 0 0 1 10 2.6c0 6.8-10 12.9-10 12.9z"/></svg>
+        <div class="small" style="margin-top:6px;line-height:1.6;font-size:14px">A little reminder:<br><span id="affirm">You are strong, capable, and doing amazing.</span> ♡</div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="screen push" id="s-settings" aria-label="Cycle settings">
+      <div class="nav"><button class="iconbtn" data-back aria-label="Back"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M8 2L2 8l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><h1>Cycle settings</h1></div>
+      <div class="card">
+        <div class="row"><div class="t">Your name</div><input id="setName" maxlength="20" style="width:140px;text-align:right;border:0;background:transparent" aria-label="Name"></div>
+        <div class="row"><div class="t">Cycle length<div class="s" id="cycAuto"></div></div><div class="stepper"><button data-step="cycle,-1" aria-label="Shorter">−</button><b id="setCycle"></b><button data-step="cycle,1" aria-label="Longer">+</button></div></div>
+        <div class="row"><div class="t">Period length</div><div class="stepper"><button data-step="period,-1" aria-label="Shorter">−</button><b id="setPeriod"></b><button data-step="period,1" aria-label="Longer">+</button></div></div>
+        <div class="row"><div class="t">Use my history to predict<div class="s">Averages your logged cycles</div></div><button class="tog" role="switch" id="setAuto" aria-label="Use history"></button></div>
+      </div>
+      <div class="lbl" style="margin-top:22px">Appearance</div>
+      <div class="seg" id="themeSeg"><button data-th="auto">Auto</button><button data-th="dark">Dark</button><button data-th="light">Light</button></div>
+    </section>
+
+    <!-- PRIVACY -->
+    <section class="screen push" id="s-privacy" aria-label="Privacy">
+      <div class="nav"><button class="iconbtn" data-back aria-label="Back"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M8 2L2 8l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><h1>Privacy</h1></div>
+      <div class="card" style="padding:16px;line-height:1.55;font-size:15px" id="privText"></div>
+      <div class="stack" style="margin-top:16px">
+        <button class="btn ghost press" id="exportBtn">Save a backup</button>
+        <button class="btn ghost press" id="importBtn">Restore from backup</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+        <button class="btn danger press" id="wipeBtn">Delete all my data</button>
+      </div>
+    </section>
+
+    <!-- HELP -->
+    <section class="screen push" id="s-help" aria-label="Help">
+      <div class="nav"><button class="iconbtn" data-back aria-label="Back"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M8 2L2 8l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><h1>Help &amp; support</h1></div>
+      <div class="card" style="padding:4px 16px;line-height:1.55;font-size:15px">
+        <p><b>Logging a period.</b> Tap Log period on Home on the first day. When it’s over, open it again and tap Period ended.</p>
+        <p><b>Fixing a date.</b> Open Calendar, tap the day, and choose what it should be. Or edit it in History.</p>
+        <p><b>Predictions.</b> After two logged periods, your average cycle length is used. Until then, the length in Cycle settings is used.</p>
+        <p><b>Add to Home Screen.</b> In Safari, tap Share, then Add to Home Screen.</p>
+        <p class="muted">This app isn’t birth control and can’t diagnose anything. If something feels off, talk to a doctor.</p>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="screen push" id="s-about" aria-label="About">
+      <div class="nav"><button class="iconbtn" data-back aria-label="Back"><svg width="11" height="18" viewBox="0 0 10 16"><path d="M8 2L2 8l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><h1>About</h1></div>
+      <div style="text-align:center;margin-top:40px">
+        <div class="name" style="font-size:54px">Bloom</div>
+        <div class="tag">Your cycle. Your peace.</div>
+        <p class="muted small" style="margin-top:30px">Made with love, just for you ♡<br>Version 1.0</p>
+      </div>
+    </section>
+  </div>
+
+  <nav class="tabbar" id="tabbar" aria-label="Tabs">
+    <button data-tab="home"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>Home</button>
+    <button data-tab="calendar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><rect x="7" y="13" width="3" height="3" fill="currentColor" stroke="none"/></svg>Calendar</button>
+    <button data-tab="mood"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/></svg>Mood</button>
+    <button data-tab="history"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+    <button data-tab="more"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r=".8" fill="currentColor"/><circle cx="3.5" cy="12" r=".8" fill="currentColor"/><circle cx="3.5" cy="18" r=".8" fill="currentColor"/></svg>More</button>
+  </nav>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+// ---------- dates ----------
+const pad=n=>String(n).padStart(2,"0");
+const key=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const add=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return key(d)};
+const diff=(a,b)=>Math.round((Date.UTC(...ymd(a))-Date.UTC(...ymd(b)))/864e5);
+function ymd(s){const[y,m,d]=s.split("-").map(Number);return[y,m-1,d]}
+const today=()=>key(new Date());
+const MON=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const short=s=>{const d=parse(s);return MS[d.getMonth()]+" "+d.getDate()};
+const long=s=>{const d=parse(s);return MS[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear()};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+
+// ---------- state ----------
+const LS="isra-cycle-v1";
+const blank=()=>({name:"Isra",cycle:28,period:5,auto:true,theme:"dark",periods:[],spotting:[],logs:{},
+  reminders:[
+    {id:"period",kind:"period",title:"Period reminder",sub:"A heads-up before your period starts.",time:"08:00",on:true,days:2},
+    {id:"ovulation",kind:"ovulation",title:"Ovulation reminder",sub:"Know your fertile window.",time:"10:00",on:true},
+    {id:"water",kind:"daily",title:"Water reminder",sub:"Stay hydrated, feel better.",time:"09:00",on:true,emoji:"💧"},
+    {id:"self",kind:"daily",title:"Self-care reminder",sub:"Take care of yourself, always.",time:"19:00",on:true,emoji:"💗"}],
+  seen:{}, updated:0});
+let S=blank();
+try{const raw=localStorage.getItem(LS);if(raw)S=Object.assign(blank(),JSON.parse(raw))}catch(e){}
+let dbDoc=null, saveTimer=null;
+function save(){
+  S.updated=Date.now();
+  try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
+  if(dbDoc){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{dbDoc.set(JSON.parse(JSON.stringify(S))).catch(()=>{})},600)}
+}
+// optional private cloud copy (signed-in viewers)
+(async()=>{
+  try{
+    if(!window.claude||!window.claude.use)return;
+    const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+    if(!db||!user)return;
+    const id=await user.id(); if(!id)return;
+    dbDoc=db.doc("data/users/"+id+"/cycle");
+    const snap=await dbDoc.get();
+    if(snap.exists){const r=snap.data();if(r&&(r.updated||0)>(S.updated||0)){S=Object.assign(blank(),r);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}render()}}
+    else if(S.periods.length) dbDoc.set(JSON.parse(JSON.stringify(S))).catch(()=>{});
+    synced=true; renderPrivacy();
+  }catch(e){}
+})();
+let synced=false;
+
+// ---------- cycle math ----------
+const sorted=()=>S.periods.slice().sort((a,b)=>a.start<b.start?-1:1);
+function pEnd(p){ // end date for a period (estimated if open)
+  if(p.end)return p.end;
+  const est=add(p.start,avgPeriod()-1);
+  return est<today()?est:(today()>=p.start?(diff(today(),p.start)<10?today():est):est);
+}
+function avgCycle(){
+  const ps=sorted();
+  if(S.auto&&ps.length>=2){
+    const gaps=[];for(let i=1;i<ps.length;i++){const g=diff(ps[i].start,ps[i-1].start);if(g>=18&&g<=50)gaps.push(g)}
+    const recent=gaps.slice(-6);
+    if(recent.length)return Math.round(recent.reduce((a,b)=>a+b,0)/recent.length);
+  }
+  return S.cycle;
+}
+function avgPeriod(){
+  const ps=sorted().filter(p=>p.end);
+  if(S.auto&&ps.length>=2){const l=ps.slice(-6).map(p=>diff(p.end,p.start)+1).filter(n=>n>=1&&n<=12);if(l.length)return Math.round(l.reduce((a,b)=>a+b,0)/l.length)}
+  return S.period;
+}
+function lastStart(ref){ref=ref||today();const ps=sorted().filter(p=>p.start<=ref);return ps.length?ps[ps.length-1].start:null}
+function openPeriod(){const t=today();return S.periods.find(p=>!p.end&&p.start<=t&&diff(t,p.start)<10)||null}
+function info(){
+  const ls=lastStart(); if(!ls)return null;
+  const C=avgCycle(),P=avgPeriod(),t=today();
+  const day=diff(t,ls)+1;
+  let next=add(ls,C); const late=day>C?day-C:0;
+  const ov=add(next,-14);
+  let nextOv=ov<t?add(ov,C):ov;
+  let phase;
+  const ovDay=C-14+1; // cycle day of ovulation
+  if(day<=P)phase="Menstrual Phase";
+  else if(day<ovDay-1)phase="Follicular Phase";
+  else if(day<=ovDay+1)phase="Ovulation Phase";
+  else phase="Luteal Phase";
+  if(late)phase="Period may be late";
+  return {ls,C,P,day,next,ov,nextOv,phase,late,ovDay};
+}
+function isLogged(d){return S.periods.some(p=>d>=p.start&&d<=pEnd(p))}
+function classify(d){
+  const c={per:isLogged(d),pp:false,fert:false,ov:false};
+  const ls=lastStart(d)||lastStart(); if(!ls)return c;
+  const C=avgCycle(),P=avgPeriod();
+  const base=lastStart(); // project from latest real period
+  if(!base)return c;
+  for(let k=-1;k<=8;k++){
+    const st=add(base,k*C);
+    if(k>=1&&d>=st&&d<=add(st,P-1)&&!c.per&&d>today())c.pp=true;
+    const ov=add(st,C-14);
+    if(k>=0||d>=sorted()[0].start){
+      if(d===ov&&(k>=0))c.ov=true;
+      if(k>=0&&d>=add(ov,-5)&&d<=add(ov,1)&&!c.per)c.fert=true;
+    }
+  }
+  return c;
+}
+
+// ---------- UI helpers ----------
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let toastT;
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),1900);try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}}
+function openSheet(html,bind){$("#sheetBody").innerHTML=html;$("#scrim").classList.add("on");$("#sheet").classList.add("on");bind&&bind($("#sheetBody"))}
+function closeSheet(){$("#scrim").classList.remove("on");$("#sheet").classList.remove("on")}
+$("#scrim").onclick=closeSheet;
+(function(){let y0=null;const sh=$("#sheet");sh.addEventListener("touchstart",e=>{if(sh.scrollTop<=0)y0=e.touches[0].clientY},{passive:true});sh.addEventListener("touchmove",e=>{if(y0!==null&&e.touches[0].clientY-y0>70){y0=null;closeSheet()}},{passive:true});sh.addEventListener("touchend",()=>y0=null)})();
+
+// ---------- navigation ----------
+const TABS=["home","calendar","mood","history","more"];
+let stack=["home"];
+function show(id,push){
+  $$(".screen").forEach(s=>s.classList.remove("on"));
+  const el=$("#s-"+id); el.classList.add("on"); el.scrollTop=0;
+  const tab=TABS.includes(id)?id:stack.find(x=>TABS.includes(x))||"home";
+  $$("#tabbar button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab?"page":"false"));
+  render(id);
+  try{history.replaceState(null,"","#"+id)}catch(e){}
+}
+function go(id){stack.push(id);show(id,true)}
+function tab(id){stack=[id];show(id)}
+function back(){if(stack.length>1)stack.pop();show(stack[stack.length-1])}
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-go]"),t=e.target.closest("[data-tab]"),b=e.target.closest("[data-back]");
+  if(g){go(g.dataset.go)} else if(t){tab(t.dataset.tab)} else if(b){back()}
+});
+// swipe from left edge to go back
+(function(){let x0=null,y0;document.addEventListener("touchstart",e=>{const t=e.touches[0];if(t.clientX<24&&stack.length>1){x0=t.clientX;y0=t.clientY}},{passive:true});document.addEventListener("touchend",e=>{if(x0===null)return;const t=e.changedTouches[0];if(t.clientX-x0>80&&Math.abs(t.clientY-y0)<60)back();x0=null},{passive:true})})();
+
+// ---------- renderers ----------
+function render(id){
+  id=id||stack[stack.length-1];
+  applyTheme();
+  ({home:renderHome,calendar:renderCal,overview:renderOverview,mood:renderMood,log:renderLog,history:renderHistory,reminders:renderReminders,more:renderMore,settings:renderSettings,privacy:renderPrivacy}[id]||(()=>{}))();
+}
+function applyTheme(){document.documentElement.setAttribute("data-theme",S.theme==="auto"?"":S.theme);if(S.theme==="auto")document.documentElement.removeAttribute("data-theme")}
+
+function dueReminders(){
+  const out=[],t=today(),i=info();
+  S.reminders.forEach(r=>{
+    if(!r.on)return;
+    if(r.kind==="period"&&i){const n=diff(i.next,t);if(i.late)out.push({r,msg:"Your period may be "+i.late+" day"+(i.late>1?"s":"")+" late. That’s common, cycles vary."});else if(n>=0&&n<=(r.days||2))out.push({r,msg:n===0?"Your period is expected today. Keep supplies handy ♡":"Your period is expected in "+n+" day"+(n>1?"s":"")+"."})}
+    else if(r.kind==="ovulation"&&i){const n=diff(i.nextOv,t);if(n>=0&&n<=1)out.push({r,msg:n===0?"Estimated ovulation day is today.":"Estimated ovulation is tomorrow."});else if(classify(t).fert)out.push({r,msg:"You’re in your fertile window."})}
+    else if(r.kind==="daily"){const now=new Date();const [h,m]=r.time.split(":").map(Number);if(now.getHours()*60+now.getMinutes()>=h*60+m)out.push({r,msg:r.title.replace(/ reminder$/i,"")+": "+r.sub})}
+  });
+  return out.filter(x=>S.seen[x.r.id]!==t);
+}
+function renderHome(){
+  const t=today(),i=info();
+  $("#homeDate").textContent="Today · "+long(t);
+  const op=openPeriod();
+  $("#homeLogLabel").textContent=op?"Period ended? Tap to update":"Log period";
+  if(!i){$("#homeDay").textContent="Welcome";$("#homePhase").textContent="Log your last period to begin";}
+  else{$("#homeDay").textContent="Day "+i.day;$("#homePhase").textContent=i.phase;}
+  const due=dueReminders();
+  $("#homeBanner").innerHTML=due.map(d=>`<div class="banner"><span aria-hidden="true">🔔</span><div style="flex:1">${esc(d.msg)}</div><button class="small" data-dismiss="${esc(d.r.id)}" aria-label="Dismiss" style="color:var(--muted);padding:0 4px">✕</button></div>`).join("");
+  $$("[data-dismiss]").forEach(b=>b.onclick=e=>{e.stopPropagation();S.seen[b.dataset.dismiss]=t;save();renderHome()});
+}
+
+let calMonth=(()=>{const d=new Date();return {y:d.getFullYear(),m:d.getMonth()}})(), calSel=null;
+$("#calPrev").onclick=()=>{calMonth.m--;if(calMonth.m<0){calMonth.m=11;calMonth.y--}renderCal()};
+$("#calNext").onclick=()=>{calMonth.m++;if(calMonth.m>11){calMonth.m=0;calMonth.y++}renderCal()};
+(function(){let x0=null;const g=$("#calGrid");g.addEventListener("touchstart",e=>x0=e.touches[0].clientX,{passive:true});g.addEventListener("touchend",e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>60)(dx<0?$("#calNext"):$("#calPrev")).click();x0=null},{passive:true})})();
+function renderCal(){
+  const {y,m}=calMonth;$("#calTitle").textContent=MON[m]+" "+y;
+  const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()),t=today();
+  let h="";
+  for(let i=0;i<42;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);const k=key(d);
+    if(i>=35&&d.getMonth()!==m)break;
+    const c=classify(k),cls=[d.getMonth()!==m?"out":"",k===t?"today":"",calSel===k?"sel":"",c.per?"per":"",c.pp?"pp":"",c.fert?"fert":"",c.ov?"ov":""].join(" ");
+    h+=`<button class="${cls}" data-day="${k}" aria-label="${long(k)}${c.per?", period":c.pp?", predicted period":""}${c.ov?", ovulation":c.fert?", fertile":""}"><span>${d.getDate()}</span></button>`;
+  }
+  $("#calGrid").innerHTML=h;
+  $$("#calGrid [data-day]").forEach(b=>b.onclick=()=>{calSel=b.dataset.day;renderCal();daySheet(calSel)});
+  const i=info();
+  if(!i){$("#calCards").innerHTML=`<button class="card row press" data-go="log"><div class="t">Log your last period to see predictions</div></button>`;return}
+  const n1=diff(i.late?t:i.next,t),n2=diff(i.nextOv,t);
+  $("#calCards").innerHTML=
+  `<button class="card row press" data-jump="${i.next}">${ic("cal")}<div class="t"><div class="small">Next period (estimated)</div><div class="s">${i.late?"Late by "+i.late+" day"+(i.late>1?"s":""):"In "+n1+" day"+(n1===1?"":"s")} · ${long(i.next)}</div></div>${chev}</button>
+   <button class="card row press" data-jump="${i.nextOv}">${ic("moon")}<div class="t"><div class="small">Next ovulation (estimated)</div><div class="s">In ${n2} day${n2===1?"":"s"} · ${long(i.nextOv)}</div></div>${chev}</button>`;
+  $$("[data-jump]").forEach(b=>b.onclick=()=>{const d=parse(b.dataset.jump);calMonth={y:d.getFullYear(),m:d.getMonth()};calSel=b.dataset.jump;renderCal()});
+}
+const chev=`<svg class="chev" width="10" height="16" viewBox="0 0 10 16"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+function ic(n){
+  if(n==="cal")return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`;
+  return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>`;
+}
+function daySheet(d){
+  const c=classify(d),inP=S.periods.find(p=>d>=p.start&&d<=pEnd(p)),log=S.logs[d],t=today(),spot=S.spotting.includes(d);
+  const before=sorted().filter(p=>p.start<d&&!(d<=pEnd(p))).pop();
+  let status=inP?"Period day "+(diff(d,inP.start)+1):c.pp?"Predicted period":c.ov?"Estimated ovulation":c.fert?"Fertile window":"No period";
+  const future=d>t;
+  let btns="";
+  if(!future){
+    if(!inP)btns+=`<button class="btn press" data-a="start">Period started this day</button>`;
+    if(inP&&d!==inP.start)btns+=`<button class="btn press" data-a="endhere">Period ended this day</button>`;
+    if(!inP&&before&&diff(d,before.start)<12)btns+=`<button class="btn ghost press" data-a="extend">Still my period (extend)</button>`;
+    if(inP)btns+=`<button class="btn ghost press" data-a="remove">Not a period day</button>`;
+    btns+=`<button class="btn ghost press" data-a="spot">${spot?"Remove spotting":"Log spotting"}</button>`;
+    btns+=`<button class="btn ghost press" data-a="mood">${log?"Edit mood & symptoms":"Log mood & symptoms"}</button>`;
+  }
+  const L=log?`<div class="card" style="padding:12px 14px;margin:12px 0"><div>${MOODS.find(x=>x.k===log.mood)?.e||""} ${esc(MOODS.find(x=>x.k===log.mood)?.l||"")}</div>${log.sym&&log.sym.length?`<div class="small muted">${log.sym.map(esc).join(", ")}</div>`:""}${log.note?`<div class="small" style="margin-top:4px">${esc(log.note)}</div>`:""}</div>`:"";
+  openSheet(`<h3>${long(d)}</h3><div class="muted small" style="margin-bottom:14px">${status}${spot?" · Spotting":""}</div>${L}<div class="stack">${btns||`<p class="muted small">This day is in the future. Predictions update as you log.</p>`}</div>`,root=>{
+    root.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{
+      const a=b.dataset.a;
+      if(a==="start"){startPeriod(d);toast("Period logged")}
+      else if(a==="endhere"){inP.end=d;trimOverlaps();save();toast("Period updated")}
+      else if(a==="extend"){before.end=d;trimOverlaps();save();toast("Period updated")}
+      else if(a==="remove"){
+        if(d===inP.start&&(!inP.end||inP.end===d||diff(pEnd(inP),d)===0)){S.periods=S.periods.filter(p=>p!==inP)}
+        else if(d===inP.start){inP.start=add(d,1)}
+        else{inP.end=add(d,-1)}
+        save();toast("Updated")}
+      else if(a==="spot"){S.spotting=spot?S.spotting.filter(x=>x!==d):[...S.spotting,d];save();toast(spot?"Spotting removed":"Spotting logged")}
+      else if(a==="mood"){closeSheet();moodDate=d;tab("mood");return}
+      closeSheet();render();
+    });
+  });
+}
+function startPeriod(d){
+  // if a period already covers/near this date, adjust instead of duplicating
+  const near=S.periods.find(p=>Math.abs(diff(p.start,d))<8);
+  if(near){near.start=d;if(near.end&&near.end<d)near.end=null}
+  else S.periods.push({start:d,end:d<add(today(),-9)?add(d,avgPeriod()-1):null});
+  trimOverlaps();save();
+}
+function trimOverlaps(){
+  const ps=sorted();for(let i=0;i<ps.length-1;i++){if(ps[i].end&&ps[i].end>=ps[i+1].start)ps[i].end=add(ps[i+1].start,-1)}
+  S.periods=ps;
+}
+
+function renderOverview(){
+  const i=info(),r=$("#ring");
+  if(!i){r.innerHTML=`<circle cx="110" cy="110" r="86" fill="none" stroke="var(--surface2)" stroke-width="14"/><text x="110" y="115" text-anchor="middle" fill="var(--muted)" font-size="14">No data yet</text>`;$("#phases").innerHTML=`<p class="empty">Log a period to see your phases.</p>`;$("#ovLen").textContent="";return}
+  const C=i.C,P=i.P,ovs=C-14; // ovulation index (0-based day)
+  const segs=[["Period",0,P,"var(--pink)"],["Follicular Phase",P,ovs-1,"var(--lav-soft)"],["Ovulation",ovs-1,ovs+2,"var(--blue)"],["Luteal Phase",ovs+2,C,"var(--grey)"]];
+  const R=86,CIRC=2*Math.PI*R;let svg=`<circle cx="110" cy="110" r="${R}" fill="none" stroke="var(--surface2)" stroke-width="14"/>`;
+  segs.forEach(([n,a,b,col])=>{if(b<=a)return;const len=(b-a)/C*CIRC-3;svg+=`<circle cx="110" cy="110" r="${R}" fill="none" stroke="${col}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${Math.max(len,1)} ${CIRC}" stroke-dashoffset="${-(a/C)*CIRC}" transform="rotate(-90 110 110)"/>`});
+  const ang=((Math.min(i.day,C)-.5)/C)*2*Math.PI-Math.PI/2;
+  svg+=`<circle cx="${110+R*Math.cos(ang)}" cy="${110+R*Math.sin(ang)}" r="10" fill="var(--bg)" stroke="var(--text)" stroke-width="3"/>`;
+  svg+=`<text x="110" y="92" text-anchor="middle" font-size="20" fill="var(--pink)">✿</text><text x="110" y="122" text-anchor="middle" font-size="24" fill="var(--text)">Day ${i.day}</text><text x="110" y="144" text-anchor="middle" font-size="13" fill="var(--muted)">${i.phase}</text>`;
+  r.innerHTML=svg;r.setAttribute("aria-label","Day "+i.day+" of "+C+", "+i.phase);
+  $("#ovLen").textContent="Your cycle is "+C+" days ("+(S.auto&&sorted().length>=2?"from your history":"estimated")+")";
+  const cur=i.day-1;
+  $("#phases").innerHTML=segs.map(([n,a,b,col])=>{if(b<=a)return"";const s=add(i.ls,a),e=add(i.ls,b-1);const now=cur>=a&&cur<b&&!i.late;return `<div class="phase${now?" now":""}"><span class="dot" style="background:${col}"></span><div class="t" style="flex:1"><b style="font-weight:500">${n}</b><div class="small muted">${short(s)} – ${short(e)}</div></div><span class="small muted">${Math.round((b-a)/C*100)}%</span></div>`}).join("");
+}
+
+const MOODS=[{k:"happy",l:"Happy",e:"😊"},{k:"calm",l:"Calm",e:"😌"},{k:"sad",l:"Sad",e:"😢"},{k:"anxious",l:"Anxious",e:"😟"},{k:"tired",l:"Tired",e:"😴"},{k:"loved",l:"Loved",e:"❤️"}];
+const SYMS=["Cramps","Headache","Back pain","Bloating","Breast tenderness","Nausea","Acne","Low energy","Cravings","Trouble sleeping"];
+let moodDate=null,draft=null;
+function renderMood(){
+  const d=moodDate||today();
+  const ex=S.logs[d];draft=draft&&draft.d===d?draft:{d,mood:ex?.mood||null,sym:ex?.sym?.slice()||[],note:ex?.note||""};
+  $("#moodQ").textContent=d===today()?"How are you feeling today?":"How were you feeling on "+short(d)+"?";
+  $("#moods").innerHTML=MOODS.map(m=>`<button class="mood press${draft.mood===m.k?" on":""}" data-m="${m.k}" aria-pressed="${draft.mood===m.k}"><span class="e" aria-hidden="true">${m.e}</span>${m.l}</button>`).join("");
+  const custom=(draft.sym||[]).filter(s=>!SYMS.includes(s));
+  $("#symptoms").innerHTML=[...SYMS,...custom].map(s=>`<button class="chip press${draft.sym.includes(s)?" on":""}" data-s="${esc(s)}" aria-pressed="${draft.sym.includes(s)}">${draft.sym.includes(s)?"✓ ":""}${esc(s)}</button>`).join("")+`<button class="chip press" id="symOther">＋ Other</button>`;
+  $("#moodNote").value=draft.note;
+  $$("#moods [data-m]").forEach(b=>b.onclick=()=>{draft.mood=draft.mood===b.dataset.m?null:b.dataset.m;renderMood()});
+  $$("#symptoms [data-s]").forEach(b=>b.onclick=()=>{const s=b.dataset.s;draft.sym=draft.sym.includes(s)?draft.sym.filter(x=>x!==s):[...draft.sym,s];renderMood()});
+  $("#symOther").onclick=()=>openSheet(`<h3>Add a symptom</h3><input class="field" id="symIn" maxlength="30" placeholder="e.g. Dizzy" style="margin:14px 0"><button class="btn press" id="symOk">Add</button>`,r=>{const i=r.querySelector("#symIn");setTimeout(()=>i.focus(),300);r.querySelector("#symOk").onclick=()=>{const v=i.value.trim();if(v&&!draft.sym.includes(v))draft.sym.push(v);closeSheet();renderMood()}});
+  $("#moodSave").disabled=!draft.mood&&!draft.sym.length&&!draft.note;
+}
+$("#moodNote").oninput=e=>{if(draft){draft.note=e.target.value;$("#moodSave").disabled=!draft.mood&&!draft.sym.length&&!draft.note}};
+$("#moodSave").onclick=()=>{
+  if(!draft)return;S.logs[draft.d]={mood:draft.mood,sym:draft.sym,note:draft.note.trim()};save();
+  toast(draft.d===today()?"Saved for today ♡":"Saved for "+short(draft.d));draft=null;moodDate=null;renderMood();
+};
+$("#moodHistBtn").onclick=()=>{
+  const ks=Object.keys(S.logs).sort().reverse().slice(0,30);
+  const counts={};ks.forEach(k=>{const m=S.logs[k].mood;if(m)counts[m]=(counts[m]||0)+1});
+  const max=Math.max(1,...Object.values(counts));
+  openSheet(`<h3>Mood history</h3><div class="muted small" style="margin-bottom:14px">Your last ${ks.length} entr${ks.length===1?"y":"ies"}</div>
+  ${ks.length?`<div class="card" style="padding:14px;margin-bottom:14px">${MOODS.map(m=>`<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><span style="width:26px">${m.e}</span><div style="flex:1;height:8px;border-radius:4px;background:var(--surface2)"><div style="height:100%;width:${(counts[m.k]||0)/max*100}%;border-radius:4px;background:var(--lav)"></div></div><span class="small muted" style="width:18px;text-align:right">${counts[m.k]||0}</span></div>`).join("")}</div>`:""}
+  <div class="card">${ks.map(k=>{const l=S.logs[k],m=MOODS.find(x=>x.k===l.mood);return `<button class="row press" data-k="${k}"><span style="font-size:22px">${m?m.e:"📝"}</span><div class="t">${short(k)}${m?" · "+m.l:""}<div class="s">${esc([...(l.sym||[])].join(", ")||l.note||"")}</div></div>${chev}</button>`}).join("")||`<p class="empty">No entries yet. Pick a mood and tap Save.</p>`}</div>`,r=>r.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{moodDate=b.dataset.k;draft=null;closeSheet();renderMood()}));
+};
+
+function renderLog(){
+  const op=openPeriod(),t=today();
+  $("#logDate").max=t;
+  if(op){
+    $("#drop").classList.add("live");$("#dropIcon").setAttribute("fill","var(--pink)");
+    $("#logTitle").textContent="Day "+(diff(t,op.start)+1)+" of your period";
+    $("#logSub").textContent="Started "+long(op.start)+". Tap below when it’s over.";
+    $("#logDateLbl").textContent="Day it ended";$("#logDate").value=t;$("#logDate").min=op.start;
+    $("#logBtn").textContent="Period ended";
+  }else{
+    $("#drop").classList.remove("live");$("#dropIcon").setAttribute("fill","var(--grey)");
+    $("#logTitle").textContent="Log your period";
+    $("#logSub").textContent="This helps me track your cycle and predict your next dates.";
+    $("#logDateLbl").textContent="Day it started";$("#logDate").value=t;$("#logDate").removeAttribute("min");
+    $("#logBtn").textContent="Log period";
+  }
+}
+$("#logBtn").onclick=()=>{
+  const d=$("#logDate").value||today();if(d>today()){toast("Pick today or an earlier day");return}
+  const op=openPeriod();
+  if(op){if(d<op.start){toast("End can’t be before the start");return}op.end=d;save();toast("Period ended ♡")}
+  else{startPeriod(d);toast("Period logged ♡")}
+  renderLog();
+};
+$("#spotBtn").onclick=()=>{const d=$("#logDate").value||today();if(!S.spotting.includes(d))S.spotting.push(d);save();toast("Spotting logged for "+short(d))};
+
+let histAll=false;
+$("#histMore").onclick=()=>{histAll=!histAll;renderHistory()};
+function renderHistory(){
+  const ps=sorted().reverse(),C=avgCycle(),P=avgPeriod();
+  $("#histStats").innerHTML=`<div class="t"><div class="small muted">Average cycle</div><div style="font-size:20px">${C} days</div></div><div class="t"><div class="small muted">Average period</div><div style="font-size:20px">${P} days</div></div><div class="t"><div class="small muted">Logged</div><div style="font-size:20px">${ps.length}</div></div>`;
+  const list=histAll?ps:ps.slice(0,6);
+  $("#histList").innerHTML=list.length?list.map(p=>{const e=pEnd(p),n=diff(e,p.start)+1;return `<button class="card row press" data-p="${p.start}"><div class="ic"><svg width="18" height="20" viewBox="0 0 24 28" fill="var(--pink)"><path d="M12 2C8.5 7.5 4 11.5 4 17a8 8 0 0 0 16 0c0-5.5-4.5-9.5-8-15z"/><circle cx="12" cy="18" r="3" fill="var(--pink-soft)"/></svg></div><div class="t">${long(p.start).replace(/, \d{4}$/,"")} – ${long(e)}<div class="s">Period · ${n} day${n>1?"s":""}${p.end?"":" (ongoing)"}</div></div>${chev}</button>`}).join(""):`<div class="empty">No periods logged yet.<br><br><button class="btn press" data-go="log" style="max-width:240px;margin:0 auto">Log period</button></div>`;
+  $("#histMore").style.display=ps.length>6?"block":"none";$("#histMore").textContent=histAll?"Show less":"View full history";
+  $$("#histList [data-p]").forEach(b=>b.onclick=()=>editPeriod(S.periods.find(p=>p.start===b.dataset.p)));
+}
+function editPeriod(p){
+  openSheet(`<h3>Edit period</h3><label class="lbl" for="eS">Started</label><input type="date" class="field" id="eS" value="${p.start}" max="${today()}"><label class="lbl" for="eE">Ended</label><input type="date" class="field" id="eE" value="${p.end||""}" max="${today()}"><div class="small muted" style="margin-top:6px">Leave “Ended” empty if it’s still going.</div><div class="stack" style="margin-top:18px"><button class="btn press" id="eSave">Save</button><button class="btn danger press" id="eDel">Delete this period</button></div>`,r=>{
+    r.querySelector("#eSave").onclick=()=>{const s=r.querySelector("#eS").value,e=r.querySelector("#eE").value;if(!s){toast("Add a start date");return}if(e&&e<s){toast("End can’t be before the start");return}p.start=s;p.end=e||null;trimOverlaps();save();closeSheet();toast("Saved");render()};
+    r.querySelector("#eDel").onclick=()=>{openSheet(`<h3>Delete this period?</h3><p class="muted small">${long(p.start)}. This can’t be undone.</p><div class="stack" style="margin-top:16px"><button class="btn press" id="yes" style="background:var(--pink);color:#fff">Delete</button><button class="btn ghost press" id="no">Cancel</button></div>`,r2=>{r2.querySelector("#yes").onclick=()=>{S.periods=S.periods.filter(x=>x!==p);save();closeSheet();toast("Deleted");render()};r2.querySelector("#no").onclick=closeSheet})};
+  });
+}
+
+function fmtTime(t){let [h,m]=t.split(":").map(Number);const ap=h>=12?"PM":"AM";h=h%12||12;return h+":"+pad(m)+" "+ap}
+function remIcon(r){
+  if(r.kind==="period")return `<div class="ic" style="background:var(--pink-soft)"><svg width="18" height="20" viewBox="0 0 24 28" fill="var(--pink)"><path d="M12 2C8.5 7.5 4 11.5 4 17a8 8 0 0 0 16 0c0-5.5-4.5-9.5-8-15z"/></svg></div>`;
+  if(r.kind==="ovulation")return `<div class="ic" style="background:var(--lav-soft)">🌸</div>`;
+  return `<div class="ic">${esc(r.emoji||"🔔")}</div>`;
+}
+function renderReminders(){
+  setTimeout(renderNotif,0);
+  $("#remList").innerHTML=S.reminders.map(r=>`<div class="card row"><button class="press" data-edit="${esc(r.id)}" style="display:flex;gap:14px;align-items:center;flex:1;text-align:left">${remIcon(r)}<div class="t"><div>${esc(r.title)}</div><div class="s">${esc(r.sub)}</div><div class="s">${r.kind==="period"?(r.days||2)+" days before · ":""}${fmtTime(r.time)}</div></div></button><button class="tog" role="switch" aria-checked="${r.on}" aria-label="${esc(r.title)}" data-tog="${esc(r.id)}"></button></div>`).join("");
+  $$("[data-tog]").forEach(b=>b.onclick=()=>{const r=S.reminders.find(x=>x.id===b.dataset.tog);r.on=!r.on;delete S.seen[r.id];save();b.setAttribute("aria-checked",r.on);toast(r.on?"Reminder on":"Reminder off")});
+  $$("[data-edit]").forEach(b=>b.onclick=()=>editReminder(S.reminders.find(x=>x.id===b.dataset.edit)));
+}
+function editReminder(r){
+  const isNew=!r;r=r||{id:"c"+Date.now(),kind:"daily",title:"",sub:"",time:"12:00",on:true,emoji:"🔔"};
+  const builtIn=["period","ovulation","water","self"].includes(r.id);
+  openSheet(`<h3>${isNew?"New reminder":"Edit reminder"}</h3>
+   ${builtIn?"":`<label class="lbl" for="rT">Title</label><input class="field" id="rT" maxlength="40" value="${esc(r.title)}" placeholder="e.g. Take vitamins"><label class="lbl" for="rS">Note</label><input class="field" id="rS" maxlength="60" value="${esc(r.sub)}" placeholder="Optional">`}
+   <label class="lbl" for="rTime">Time</label><input type="time" class="field" id="rTime" value="${r.time}">
+   ${r.kind==="period"?`<label class="lbl">Days before</label><div class="seg" id="rDays">${[1,2,3,5].map(n=>`<button data-n="${n}" class="${(r.days||2)===n?"on":""}">${n}</button>`).join("")}</div>`:""}
+   <div class="stack" style="margin-top:18px"><button class="btn press" id="rSave">${isNew?"Add reminder":"Save"}</button>${!builtIn&&!isNew?`<button class="btn danger press" id="rDel">Delete reminder</button>`:""}</div>`,root=>{
+    let days=r.days||2;root.querySelectorAll("#rDays button").forEach(b=>b.onclick=()=>{days=+b.dataset.n;root.querySelectorAll("#rDays button").forEach(x=>x.classList.toggle("on",x===b))});
+    root.querySelector("#rSave").onclick=()=>{
+      if(!builtIn){const t=root.querySelector("#rT").value.trim();if(!t){toast("Give it a title");return}r.title=t;r.sub=root.querySelector("#rS").value.trim()||"Daily reminder"}
+      r.time=root.querySelector("#rTime").value||r.time;if(r.kind==="period")r.days=days;
+      if(isNew)S.reminders.push(r);delete S.seen[r.id];save();closeSheet();toast(isNew?"Reminder added":"Saved");renderReminders()};
+    const del=root.querySelector("#rDel");if(del)del.onclick=()=>{S.reminders=S.reminders.filter(x=>x!==r);save();closeSheet();toast("Deleted");renderReminders()};
+  });
+}
+$("#remAdd").onclick=()=>editReminder(null);
+
+// ---------- notifications ----------
+const standalone=window.navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+let swReg=null;
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").then(r=>{swReg=r;notifyDue()}).catch(()=>{})}
+function notifState(){if(!("Notification" in window))return "none";return Notification.permission}
+function renderNotif(){
+  const c=$("#notifCard");if(!c)return;const st=notifState();
+  let body;
+  if(st==="granted")body=`<b style="font-weight:600">Notifications are on ✓</b><div class="small muted" style="margin-top:4px;line-height:1.5">Bloom sends due reminders as notifications whenever it’s opened. <button class="small" id="nTest" style="color:var(--lav);text-decoration:underline">Send a test</button></div>`;
+  else if(st==="denied")body=`<b style="font-weight:600">Notifications are blocked</b><div class="small muted" style="margin-top:4px;line-height:1.5">Turn them on in iPhone Settings → Notifications → Bloom.</div>`;
+  else if(!standalone&&/iPhone|iPad/.test(navigator.userAgent))body=`<b style="font-weight:600">Turn on notifications</b><div class="small muted" style="margin-top:4px;line-height:1.5">First add Bloom to your Home Screen: tap Share, then Add to Home Screen. Open it from there and come back here.</div>`;
+  else if(st==="none")body=`<b style="font-weight:600">Notifications aren’t supported here</b><div class="small muted" style="margin-top:4px">Use the calendar alerts below instead.</div>`;
+  else body=`<b style="font-weight:600">Turn on notifications</b><div class="small muted" style="margin:4px 0 12px;line-height:1.5">Get a gentle heads-up for your reminders.</div><button class="btn press" id="nAllow">Allow notifications</button>`;
+  c.innerHTML=body;
+  const a=$("#nAllow");if(a)a.onclick=async()=>{try{await Notification.requestPermission()}catch(e){}renderNotif();if(notifState()==="granted"){toast("Notifications on ♡");notifyDue(true)}};
+  const t=$("#nTest");if(t)t.onclick=()=>sendNote("Bloom 🌸","This is how your reminders will look ♡","test");
+}
+async function sendNote(title,body,tag){
+  try{const reg=swReg||await navigator.serviceWorker.ready;await reg.showNotification(title,{body,tag,icon:"icon-192.png",badge:"icon-192.png"})}
+  catch(e){try{new Notification(title,{body,icon:"icon-192.png"})}catch(e2){}}
+}
+function notifyDue(){
+  if(notifState()!=="granted")return;
+  const t=today();S.notified=S.notified||{};
+  dueReminders().forEach(d=>{const k=d.r.id+"|"+t;if(S.notified[k])return;S.notified[k]=1;sendNote(d.r.title,d.msg,d.r.id)});
+  Object.keys(S.notified).forEach(k=>{if(!k.endsWith(t))delete S.notified[k]});save();
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)notifyDue()});
+setInterval(()=>{if(!document.hidden)notifyDue()},60000);
+
+// ---------- calendar (.ics) alerts ----------
+function icsStamp(d,time){const[h,m]=time.split(":");return d.replace(/-/g,"")+"T"+h+m+"00"}
+function icsEsc(s){return String(s).replace(/([,;\\])/g,"\\$1").replace(/\n/g,"\\n")}
+function icsEvent(uid,date,time,title,desc,rrule){
+  const st=icsStamp(date,time),[h,m]=time.split(":").map(Number),em=h*60+m+15,et=date.replace(/-/g,"")+"T"+pad(Math.floor(em/60)%24)+pad(em%60)+"00";
+  const now=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z";
+  return ["BEGIN:VEVENT","UID:"+uid+"@bloom","DTSTAMP:"+now,"DTSTART:"+st,"DTEND:"+et,"SUMMARY:"+icsEsc(title),"DESCRIPTION:"+icsEsc(desc),rrule?"RRULE:"+rrule:"","BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(title),"TRIGGER:PT0M","END:VALARM","END:VEVENT"].filter(Boolean).join("\r\n");
+}
+function downloadIcs(name,events){
+  if(!events.length){toast("Nothing to add yet");return}
+  const body=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Bloom//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH",...events,"END:VCALENDAR"].join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([body],{type:"text/calendar"}));a.download=name;document.body.appendChild(a);a.click();a.remove();
+  toast("Tap Add All in Calendar ♡");
+}
+$("#icsCycle").onclick=()=>{
+  const i=info();if(!i){toast("Log a period first");go("log");return}
+  const ev=[],t=today(),pr=S.reminders.find(r=>r.id==="period"),or=S.reminders.find(r=>r.id==="ovulation");
+  for(let k=0;k<6;k++){
+    const st=add(i.ls,(k+1)*i.C),ov=add(st,-14);
+    if(pr&&pr.on){const d=add(st,-(pr.days||2));if(d>=t)ev.push(icsEvent("period-"+st,d,pr.time,"🌸 Period in "+(pr.days||2)+" days","Estimated start: "+long(st)+". Dates are estimates."))}
+    if(or&&or.on){const d=add(ov,-1);if(d>=t)ev.push(icsEvent("ov-"+ov,d,or.time,"💜 Ovulation tomorrow","Estimated ovulation: "+long(ov)+". Dates are estimates."))}
+  }
+  downloadIcs("bloom-cycle.ics",ev);
+};
+$("#icsDaily").onclick=()=>{
+  const ev=S.reminders.filter(r=>r.on&&r.kind==="daily").map(r=>icsEvent("daily-"+r.id,today(),r.time,(r.emoji||"🔔")+" "+r.title,r.sub,"FREQ=DAILY"));
+  downloadIcs("bloom-daily.ics",ev);
+};
+
+const AFF=["You are strong, capable, and doing amazing.","Rest is productive too.","Be gentle with yourself today.","You’re loved, every single day.","Your body is doing its best. So are you."];
+function renderMore(){$("#moreName").textContent=S.name||"Isra";$("#affirm").textContent=AFF[new Date().getDate()%AFF.length]}
+function renderSettings(){
+  $("#setName").value=S.name;$("#setCycle").textContent=S.cycle;$("#setPeriod").textContent=S.period;
+  $("#setAuto").setAttribute("aria-checked",S.auto);
+  const n=sorted().length;$("#cycAuto").textContent=S.auto&&n>=2?"Using your average: "+avgCycle()+" days":"Used for predictions";
+  $$("#themeSeg button").forEach(b=>b.classList.toggle("on",b.dataset.th===S.theme));
+}
+$("#setName").oninput=e=>{S.name=e.target.value.trim()||"Isra";save()};
+$$("[data-step]").forEach(b=>b.onclick=()=>{const[k,v]=b.dataset.step.split(",");if(k==="cycle")S.cycle=Math.min(45,Math.max(20,S.cycle+ +v));else S.period=Math.min(10,Math.max(2,S.period+ +v));save();renderSettings()});
+$("#setAuto").onclick=()=>{S.auto=!S.auto;save();renderSettings()};
+$$("#themeSeg button").forEach(b=>b.onclick=()=>{S.theme=b.dataset.th;save();applyTheme();renderSettings()});
+
+function renderPrivacy(){
+  $("#privText").innerHTML=`Everything you log stays private to you. Nobody else who opens this link can see it.<br><br>${synced?"It’s saved on this device and backed up privately to your account, so it’s still here if you switch phones.":"It’s saved on this device. Save a backup now and then so you never lose it."}`;
+}
+$("#exportBtn").onclick=async()=>{
+  const data=JSON.stringify(S,null,2),name="bloom-backup-"+today()+".json";
+  try{const dl=window.claude&&await claude.use("downloads");if(dl){await dl.save({filename:name,data:new Blob([data],{type:"application/json"})});toast("Backup saved");return}}catch(e){if(e&&e.code==="declined")return}
+  try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast("Backup saved");return}catch(e){}
+  try{await navigator.clipboard.writeText(data);toast("Backup copied")}catch(e){toast("Couldn’t save a backup here")}
+};
+$("#importBtn").onclick=()=>$("#importFile").click();
+$("#importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!Array.isArray(o.periods))throw 0;S=Object.assign(blank(),o);save();toast("Backup restored");render()}catch(err){toast("That file isn’t a backup")}e.target.value=""};
+$("#wipeBtn").onclick=()=>openSheet(`<h3>Delete all data?</h3><p class="muted small">Every period, mood and reminder will be removed. This can’t be undone.</p><div class="stack" style="margin-top:16px"><button class="btn press" id="yes" style="background:var(--pink);color:#fff">Delete everything</button><button class="btn ghost press" id="no">Cancel</button></div>`,r=>{r.querySelector("#yes").onclick=()=>{const keepName=S.name;S=blank();S.name=keepName;save();closeSheet();toast("All data deleted");tab("home")};r.querySelector("#no").onclick=closeSheet});
+
+// refresh when returning to the app (new day, reminders)
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
+setInterval(()=>{if(!document.hidden&&stack[stack.length-1]==="home")renderHome()},60000);
+
+// boot
+const h=(location.hash||"").slice(1);
+if(["calendar","mood","history","more"].includes(h))tab(h);else tab("home");
+if(!S.periods.length)setTimeout(()=>{if(stack.length===1&&stack[0]==="home")go("log")},700);
+})();
+</script>
+</body>
+</html>
