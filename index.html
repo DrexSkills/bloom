@@ -92,6 +92,11 @@ h1{font-size:28px;font-weight:700;letter-spacing:-.4px;margin:8px 0 16px}
 .tog[aria-checked="true"]{background:#34c759}.tog[aria-checked="true"]::after{transform:translateX(20px)}
 .danger{color:var(--pink)}
 
+.top{display:flex;align-items:center;justify-content:space-between}
+.mus{width:42px;height:42px;border-radius:21px;display:grid;place-items:center;background:var(--card);color:var(--muted);transition:background .3s,color .3s}
+.mus.on{background:var(--pinkbg);color:var(--pink)}
+.mus.on svg{animation:sway 3s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
 /* tab bar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;display:flex;background:rgba(12,11,14,.85);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);border-top:1px solid var(--line);padding:6px 0 max(6px,env(safe-area-inset-bottom,0px));z-index:20}
 .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--faint);padding:3px 0}
@@ -116,7 +121,7 @@ h1{font-size:28px;font-weight:700;letter-spacing:-.4px;margin:8px 0 16px}
 <div class="app">
 
 <section class="screen" id="s-today" aria-label="Today">
-  <div class="brand">Bloom</div>
+  <div class="top"><div class="brand">Bloom</div><button class="mus press" id="musBtn" aria-label="Play calm music" aria-pressed="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 17.5V6l11-2.5v11.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="6.5" cy="17.5" r="2.7"/><circle cx="17.5" cy="15" r="2.7"/></svg></button></div>
   <div class="date" id="tDate"></div>
   <div id="tBanner"></div>
   <div class="ringwrap">
@@ -392,6 +397,60 @@ $("#exportBtn").onclick=()=>{const a=document.createElement("a");a.href=URL.crea
 $("#importBtn").onclick=()=>$("#importFile").click();
 $("#importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!Array.isArray(o.periods))throw 0;S=Object.assign(blank(),o);save();toast("Backup restored");render()}catch(x){toast("That isn’t a Bloom backup")}e.target.value=""};
 $("#wipeBtn").onclick=()=>sheet(`<h3>Delete all data?</h3><p class="muted">All periods and moods will be removed. This can’t be undone.</p><button class="sbtn pk press" id="y">Delete everything</button><button class="sbtn press" id="n">Cancel</button>`,r=>{r.querySelector("#y").onclick=()=>{S=blank();save();close();toast("All data deleted");tab("today")};r.querySelector("#n").onclick=close});
+
+// ---------- calm music (made live in the app, no files) ----------
+let ac=null,master=null,dry=null,wet=null,playing=false,chordT=null,noteTs=[],step=0;
+const CH=[[48,55,59,64],[45,52,55,60],[41,48,52,57],[43,50,55,62]];
+const hz=m=>440*Math.pow(2,(m-69)/12);
+function initAudio(){
+  const A=window.AudioContext||window.webkitAudioContext;if(!A)return false;
+  ac=new A();master=ac.createGain();master.gain.value=0;
+  const comp=ac.createDynamicsCompressor();master.connect(comp);comp.connect(ac.destination);
+  const len=Math.floor(ac.sampleRate*4),buf=ac.createBuffer(2,len,ac.sampleRate);
+  for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+  const rv=ac.createConvolver();rv.buffer=buf;wet=ac.createGain();wet.gain.value=.55;wet.connect(rv);rv.connect(master);
+  dry=ac.createGain();dry.gain.value=.5;dry.connect(master);
+  return true;
+}
+function padChord(notes,t,dur){
+  const f=ac.createBiquadFilter();f.type="lowpass";f.frequency.value=700;f.Q.value=.3;
+  const g=ac.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+3);g.gain.setValueAtTime(.07,t+dur-2.5);g.gain.linearRampToValueAtTime(0,t+dur+1.5);
+  f.connect(g);g.connect(wet);g.connect(dry);
+  notes.forEach((m,i)=>[0,-6,6].forEach(det=>{const o=ac.createOscillator();o.type=i%2?"triangle":"sine";o.frequency.value=hz(m);o.detune.value=det;const og=ac.createGain();og.gain.value=.33;o.connect(og);og.connect(f);o.start(t);o.stop(t+dur+2)}));
+}
+function key1(m,t,v){
+  const g=ac.createGain(),f=ac.createBiquadFilter();f.type="lowpass";f.frequency.value=2200;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.012);g.gain.exponentialRampToValueAtTime(.0008,t+3.6);
+  [[1,"triangle",1],[2,"sine",.25],[3,"sine",.08]].forEach(([mul,type,lvl])=>{const o=ac.createOscillator(),og=ac.createGain();o.type=type;o.frequency.value=hz(m)*mul;og.gain.value=lvl;o.connect(og);og.connect(f);o.start(t);o.stop(t+3.8)});
+  f.connect(g);g.connect(dry);g.connect(wet);
+}
+function loop(){
+  if(!playing)return;
+  const DUR=9,t=ac.currentTime+.1,c=CH[step%CH.length];step++;
+  padChord(c,t,DUR);
+  key1(c[0]-12,t,.05);
+  const n=2+Math.floor(Math.random()*3);let when=.8+Math.random();
+  for(let i=0;i<n;i++){const m=c[Math.floor(Math.random()*c.length)]+(Math.random()<.6?12:24);key1(m,t+when,.06+Math.random()*.04);when+=1.6+Math.random()*1.8;if(when>DUR-1)break}
+  chordT=setTimeout(loop,DUR*1000);
+}
+function musicUI(){const b=$("#musBtn");b.classList.toggle("on",playing);b.setAttribute("aria-pressed",playing);b.setAttribute("aria-label",playing?"Stop music":"Play calm music")}
+async function startMusic(){
+  if(!ac&&!initAudio()){toast("Music isn’t supported here");return}
+  try{await ac.resume()}catch(e){}
+  if(playing)return;playing=true;step=0;
+  const t=ac.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(.6,t+2.5);
+  loop();musicUI();
+}
+function stopMusic(fast){
+  if(!ac||!playing){playing=false;musicUI();return}
+  playing=false;clearTimeout(chordT);const t=ac.currentTime,fd=fast?.3:1.5;
+  master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(0,t+fd);
+  setTimeout(()=>{if(!playing)ac.suspend().catch(()=>{})},fd*1000+200);musicUI();
+}
+$("#musBtn").onclick=()=>{if(playing){stopMusic();S.music=false;toast("Music off")}else{startMusic();S.music=true;toast("Calm music on ♡")}save()};
+// iPhone needs a tap before sound can play, so resume her choice on the first touch
+if(S.music){$("#musBtn").classList.add("on");const go=e=>{if(e.target.closest("#musBtn"))return;document.removeEventListener("pointerdown",go,true);if(S.music)startMusic()};document.addEventListener("pointerdown",go,true)}
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopMusic(true);else if(S.music&&ac)startMusic()});
 
 tab("today");
 })();
